@@ -5,7 +5,7 @@ from bson import ObjectId
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity
 )
-
+import os
 app = Flask(__name__)
 CORS(app)
 
@@ -142,35 +142,6 @@ def place_order():
 
     cart_col.delete_many({"user_id": user_id})
     return jsonify({"message": "Order placed successfully"})
-
-
-# View orders (requires login)
-@app.route('/orders/view')
-@jwt_required()
-def view_orders():
-    user_id = get_jwt_identity()
-    orders = list(orders_col.find({"user_id": user_id}))
-    result = []
-
-    for order in orders:
-        product_ids = order.get("products", [])
-        object_ids = []
-        for pid in product_ids:
-            try:
-                object_ids.append(ObjectId(pid))
-            except:
-                continue
-
-        products = list(products_col.find({"_id": {"$in": object_ids}}))
-        for p in products:
-            p['_id'] = str(p['_id'])
-
-        result.append({
-            "order_id": str(order["_id"]),
-            "products": products
-        })
-
-    return jsonify(result)
 
 # Cancel order (requires login)
 @app.route('/orders/cancel', methods=['POST'])

@@ -1,8 +1,10 @@
+import React from 'react';
+
 const ProductCard = ({ product, addToCart }) => {
   return (
-    <div className="bg-white p-4 rounded shadow hover:shadow-lg transition">
+    <div className="bg-white p-4 rounded shadow hover:shadow-lg transition w-full max-w-xs">
       <img
-        src={product.image}
+        src={`/images/${product.image}`} // 👈 assumes image is in public/images/
         alt={product.name}
         className="w-full h-40 object-cover rounded"
       />
@@ -16,31 +18,6 @@ const ProductCard = ({ product, addToCart }) => {
       </button>
     </div>
   );
-};
-
-const styles = {
-  card: {
-    border: '1px solid #ddd',
-    padding: '1rem',
-    borderRadius: '8px',
-    textAlign: 'center',
-    width: '200px',
-    backgroundColor: '#fff'
-  },
-  image: {
-    width: '100%',
-    height: '150px',
-    objectFit: 'cover'
-  },
-  button: {
-    marginTop: '0.5rem',
-    backgroundColor: '#222',
-    color: 'white',
-    border: 'none',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  }
 };
 
 export default ProductCard;
