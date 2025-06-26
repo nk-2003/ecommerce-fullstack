@@ -82,14 +82,14 @@ def add_to_cart():
     cart_col.insert_one({"product_id": product_id, "user_id": user_id})
     return jsonify({"message": "Added to cart"})
 
-# View cart (requires login)
+# View orders (requires login)
 @app.route('/orders/view')
 @jwt_required()
 def view_orders():
     user_id = get_jwt_identity()
     orders = list(orders_col.find({"user_id": user_id}))
-
     result = []
+
     for order in orders:
         product_ids = order.get("products", [])
         object_ids = []
@@ -109,7 +109,6 @@ def view_orders():
         })
 
     return jsonify(result)
-
 
 # Remove item from cart (requires login)
 @app.route('/cart/remove', methods=['POST'])

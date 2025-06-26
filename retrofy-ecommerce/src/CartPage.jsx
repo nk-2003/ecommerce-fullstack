@@ -1,4 +1,16 @@
-const CartPage = ({ cart, removeFromCart, placeOrder }) => {
+import React, { useEffect } from "react";
+import axios from "axios";
+
+const CartPage = ({ cart, setCart, token, removeFromCart, placeOrder }) => {
+  useEffect(() => {
+    axios
+      .get(`${import.meta.env.VITE_API_URL}/cart/view`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then((res) => setCart(res.data))
+      .catch((err) => console.error("Error loading cart:", err));
+  }, [token]);
+
   return (
     <div>
       <h2>Your Cart</h2>
@@ -6,48 +18,16 @@ const CartPage = ({ cart, removeFromCart, placeOrder }) => {
         <p>Cart is empty</p>
       ) : (
         cart.map((item, index) => (
-          <div key={index} style={styles.cartItem}>
+          <div key={index}>
             <h4>{item.name}</h4>
             <p>₹{item.price}</p>
-            <button style={styles.removeBtn} onClick={() => removeFromCart(item._id)}>
-              Remove
-            </button>
+            <button onClick={() => removeFromCart(item._id)}>Remove</button>
           </div>
         ))
       )}
-      {cart.length > 0 && (
-        <button style={styles.orderBtn} onClick={placeOrder}>
-          Place Order
-        </button>
-      )}
+      {cart.length > 0 && <button onClick={placeOrder}>Place Order</button>}
     </div>
   );
-};
-
-const styles = {
-  cartItem: {
-    marginBottom: '1rem',
-    padding: '1rem',
-    border: '1px solid #ddd',
-    borderRadius: '6px'
-  },
-  removeBtn: {
-    backgroundColor: '#d9534f',
-    color: '#fff',
-    border: 'none',
-    padding: '0.4rem 0.8rem',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  orderBtn: {
-    marginTop: '1rem',
-    backgroundColor: '#28a745',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  }
 };
 
 export default CartPage;
