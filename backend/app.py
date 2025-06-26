@@ -30,27 +30,33 @@ users_col = db["users"]
 @app.route('/')
 def home():
     return jsonify({"message": "Backend connected to MongoDB"})
-
-# ✅ Register
+#register 
 @app.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    print("Received data in /register:", data)  # 👈 add this
+    try:
+        data = request.get_json()
+        print("📩 REGISTER DATA:", data)
 
-    email = data.get('email')
-    password = data.get('password')
+        email = data.get('email')
+        password = data.get('password')
 
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
+        if not email or not password:
+            print("❌ Missing email or password")
+            return jsonify({"error": "Email and password required"}), 400
 
-    if users_col.find_one({"email": email}):
-        return jsonify({"error": "User already exists"}), 400
+        if users_col.find_one({"email": email}):
+            return jsonify({"error": "User already exists"}), 400
 
-    users_col.insert_one({
-        "email": email,
-        "password": password
-    })
-    return jsonify({"message": "Registered successfully"})
+        users_col.insert_one({
+            "email": email,
+            "password": password
+        })
+
+        return jsonify({"message": "Registered successfully"})
+
+    except Exception as e:
+        print("❌ Backend error:", str(e))
+        return jsonify({"error": "Server error"}), 500
 
 # ✅ Login
 @app.route('/login', methods=['POST'])
