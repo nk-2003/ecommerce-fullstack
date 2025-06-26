@@ -35,13 +35,21 @@ def home():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
+    print("Received data in /register:", data)  # 👈 add this
+
     email = data.get('email')
     password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"error": "Email and password required"}), 400
 
     if users_col.find_one({"email": email}):
         return jsonify({"error": "User already exists"}), 400
 
-    users_col.insert_one({"email": email, "password": password})
+    users_col.insert_one({
+        "email": email,
+        "password": password
+    })
     return jsonify({"message": "Registered successfully"})
 
 # ✅ Login
