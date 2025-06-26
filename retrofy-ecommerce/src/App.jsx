@@ -1,220 +1,165 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
-import Navbar from './components/Navbar';
-import ProductCard from './components/ProductCard';
-import CartPage from './CartPage';
-import OrdersPage from './OrdersPage';
-import UserPage from './UserPage';
-import UserMenu from './components/UserMenu';
-import AuthForm from './components/AuthForm';
 
 const API = import.meta.env.VITE_API_URL;
 
-const App = () => {
-  const navigate = useNavigate();
-
+function App() {
+  const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [email, setEmail] = useState(localStorage.getItem('email') || '');
 
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
-  const [userEmail, setUserEmail] = useState(localStorage.getItem("email") || null);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-
+  // ✅ Load Products
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`${API}/products`);
-        setProducts(res.data);
-        if (token) {
-          await fetchCart();
-          await fetchOrders();
-        }
-      } catch (err) {
-        console.error('Error loading data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [token]);
+    axios.get(`${API}/products`)
+      .then(res => setProducts(res.data))
+      .catch(err => console.error("Failed to load products", err));
+  }, []);
 
-  const fetchCart = async () => {
-    try {
-      const res = await axios.get(`${API}/cart/view`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCart(res.data);
-    } catch (err) {
-      console.error("Failed to fetch cart", err);
-    }
+  // ✅ Load Cart
+  const loadCart = () => {
+    axios.get(`${API}/cart/view`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setCart(res.data))
+      .catch(err => console.error("Failed to load cart", err));
   };
 
-  const fetchOrders = async () => {
-    try {
-      const res = await axios.get(`${API}/orders/view`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setOrders(res.data);
-    } catch (err) {
-      console.error("Failed to fetch orders", err);
-    }
+  // ✅ Load Orders
+  const loadOrders = () => {
+    axios.get(`${API}/orders/view`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setOrders(res.data))
+      .catch(err => console.error("Failed to load orders", err));
   };
 
-  const addToCart = async (product) => {
-    try {
-      await axios.post(
-        `${API}/cart/add`,
-        { product_id: product._id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchCart();
-    } catch (err) {
-      console.error("Failed to add to cart", err);
-      alert("Add to cart failed");
-    }
+  // ✅ Register
+  const register = () => {
+    axios.post(`${API}/register`, {
+      email: "test@example.com",
+      password: "123456"
+    }).then(res => alert("Registered"))
+      .catch(err => alert("Register failed"));
   };
 
-  const removeFromCart = async (productId) => {
-    try {
-      await axios.post(
-        `${API}/cart/remove`,
-        { product_id: productId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchCart();
-    } catch (err) {
-      console.error("Failed to remove from cart", err);
-    }
+  // ✅ Login
+  const login = () => {
+    axios.post(`${API}/login`, {
+      email: "test@example.com",
+      password: "123456"
+    }).then(res => {
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('email', res.data.email);
+      setToken(res.data.token);
+      setEmail(res.data.email);
+      alert("Login successful");
+    }).catch(err => alert("Login failed"));
   };
 
-  const placeOrder = async () => {
-    try {
-      const res = await axios.post(
-        `${API}/orders/place`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert(res.data.message);
-      fetchCart();
-      fetchOrders();
-    } catch (err) {
-      console.error('Failed to place order', err);
-      alert('Order failed');
-    }
+  // ✅ Add to Cart
+  const addToCart = (product_id) => {
+    axios.post(`${API}/cart/add`, { product_id }, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(() => {
+      alert("Added to cart");
+      loadCart();
+    }).catch(err => alert("Add to cart failed"));
   };
 
-  const cancelOrder = async (orderId) => {
-    try {
-      const res = await axios.post(
-        `${API}/orders/cancel`,
-        { order_id: orderId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert(res.data.message);
-      fetchOrders();
-    } catch (err) {
-      console.error('Failed to cancel order', err);
-      alert('Cancel failed');
-    }
+  // ✅ Remove from Cart
+  const removeFromCart = (product_id) => {
+    axios.post(`${API}/cart/remove`, { product_id }, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(() => {
+      alert("Removed from cart");
+      loadCart();
+    }).catch(err => alert("Remove from cart failed"));
   };
 
-  const handleLogout = () => {
+  // ✅ Place Order
+  const placeOrder = () => {
+    axios.post(`${API}/orders/place`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(() => {
+      alert("Order placed");
+      loadOrders();
+      loadCart();
+    }).catch(err => alert("Order failed"));
+  };
+
+  // ✅ Cancel Order
+  const cancelOrder = (order_id) => {
+    axios.post(`${API}/orders/cancel`, { order_id }, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(() => {
+      alert("Order cancelled");
+      loadOrders();
+    }).catch(err => alert("Cancel failed"));
+  };
+
+  // ✅ Logout
+  const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
-    setToken(null);
-    setUserEmail(null);
-    setShowUserMenu(false);
+    setToken('');
+    setEmail('');
     setCart([]);
     setOrders([]);
-    alert('Logged out');
   };
 
-  if (loading) {
-    return <div className="p-6 text-center text-gray-600 text-lg">Loading...</div>;
-  }
-
-  if (!token && showLogin) {
-    return (
-      <AuthForm
-        setToken={setToken}
-        setUserEmail={setUserEmail}
-        setShowLogin={setShowLogin}
-      />
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-100 relative">
-      <Navbar
-        toggleUserMenu={() => {
-          if (token) {
-            setShowUserMenu(!showUserMenu);
-          } else {
-            setShowLogin(true);
-          }
-        }}
-        token={token}
-        setShowLogin={setShowLogin}
-      />
+    <div style={{ padding: 20 }}>
+      <h1>Retrofy Shop</h1>
 
-      {showUserMenu && (
-        <UserMenu
-          user={{ name: userEmail }}
-          cart={cart}
-          orders={orders}
-          logout={handleLogout}
-        />
+      {!token ? (
+        <>
+          <button onClick={register}>Register</button>
+          <button onClick={login}>Login</button>
+        </>
+      ) : (
+        <>
+          <p>Welcome, {email}</p>
+          <button onClick={logout}>Logout</button>
+        </>
       )}
 
-      <div className="p-4">
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {products.map(product => (
-                  <ProductCard key={product._id} product={product} addToCart={addToCart} />
-                ))}
-              </div>
-            }
-          />
-          <Route
-            path="/cart"
-            element={
-              <CartPage
-                cart={cart}
-                removeFromCart={removeFromCart}
-                placeOrder={placeOrder}
-              />
-            }
-          />
-          <Route
-            path="/orders"
-            element={
-              <OrdersPage orders={orders} cancelOrder={cancelOrder} />
-            }
-          />
-          <Route
-            path="/user"
-            element={
-              <UserPage
-                user={{ name: userEmail }}
-                cart={cart}
-                orders={orders}
-                setUserEmail={setUserEmail}
-              />
-            }
-          />
-        </Routes>
-      </div>
+      <h2>Products</h2>
+      {products.map(p => (
+        <div key={p._id} style={{ marginBottom: 10 }}>
+          <b>{p.name}</b> - ₹{p.price}
+          {token && <button onClick={() => addToCart(p._id)}>Add</button>}
+        </div>
+      ))}
+
+      {token && (
+        <>
+          <h2>Cart</h2>
+          <button onClick={loadCart}>Refresh Cart</button>
+          {cart.map(p => (
+            <div key={p._id}>
+              {p.name} - ₹{p.price}
+              <button onClick={() => removeFromCart(p._id)}>Remove</button>
+            </div>
+          ))}
+          <button onClick={placeOrder}>Place Order</button>
+
+          <h2>Orders</h2>
+          <button onClick={loadOrders}>Refresh Orders</button>
+          {orders.map(order => (
+            <div key={order.order_id}>
+              <b>Order ID:</b> {order.order_id}
+              {order.products.map(p => (
+                <div key={p._id}>- {p.name}</div>
+              ))}
+              <button onClick={() => cancelOrder(order.order_id)}>Cancel</button>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
-};
+}
 
 export default App;
