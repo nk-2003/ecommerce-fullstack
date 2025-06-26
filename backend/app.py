@@ -9,8 +9,11 @@ import os
 
 app = Flask(__name__)
 
-# ✅ CORS: Allow local dev + Vercel
-CORS(app, origins=["http://localhost:5173", "https://retrofy-three.vercel.app"])
+# ✅ Allow Vercel + local frontend access
+CORS(app, resources={r"/*": {"origins": [
+    "http://localhost:5173",
+    "https://retrofy-three.vercel.app"
+]}}, supports_credentials=True)
 
 # ✅ JWT config
 app.config["JWT_SECRET_KEY"] = "secret123"
@@ -24,7 +27,6 @@ cart_col = db["cart"]
 orders_col = db["orders"]
 users_col = db["users"]
 
-# ✅ Home route
 @app.route('/')
 def home():
     return jsonify({"message": "Backend connected to MongoDB"})
@@ -32,23 +34,20 @@ def home():
 # ✅ Register
 @app.route('/register', methods=['POST'])
 def register():
-    data = request.json
+    data = request.get_json()
     email = data.get('email')
     password = data.get('password')
 
     if users_col.find_one({"email": email}):
         return jsonify({"error": "User already exists"}), 400
 
-    users_col.insert_one({
-        "email": email,
-        "password": password
-    })
+    users_col.insert_one({"email": email, "password": password})
     return jsonify({"message": "Registered successfully"})
 
 # ✅ Login
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.json
+    data = request.get_json()
     email = data.get('email')
     password = data.get('password')
 
@@ -57,10 +56,7 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
 
     token = create_access_token(identity=str(user['_id']))
-    return jsonify({
-        "token": token,
-        "email": user.get('email')
-    })
+    return jsonify({"token": token, "email": user['email']})
 
 # ✅ Products
 @app.route('/products')
@@ -75,7 +71,7 @@ def get_products():
 @jwt_required()
 def add_to_cart():
     user_id = get_jwt_identity()
-    data = request.json
+    data = request.get_json()
     product_id = data.get('product_id')
 
     if not product_id:
@@ -84,12 +80,27 @@ def add_to_cart():
     cart_col.insert_one({"product_id": product_id, "user_id": user_id})
     return jsonify({"message": "Added to cart"})
 
+# ✅ View Cart
+@app.route('/cart/view')
+@jwt_required()
+def view_cart():
+    user_id = get_jwt_identity()
+    cart_items = list(cart_col.find({"user_id": user_id}))
+
+    product_ids = [ObjectId(item["product_id"]) for item in cart_items if "product_id" in item]
+    products = list(products_col.find({"_id": {"$in": product_ids}}))
+
+    for p in products:
+        p['_id'] = str(p['_id'])
+
+    return jsonify(products)
+
 # ✅ Remove from Cart
 @app.route('/cart/remove', methods=['POST'])
 @jwt_required()
 def remove_from_cart():
     user_id = get_jwt_identity()
-    data = request.json
+    data = request.get_json()
     product_id = data.get('product_id')
 
     if not product_id:
@@ -109,12 +120,9 @@ def place_order():
         return jsonify({"error": "Cart is empty"}), 400
 
     product_ids = [item["product_id"] for item in items if "product_id" in item]
-    orders_col.insert_one({
-        "user_id": user_id,
-        "products": product_ids
-    })
-
+    orders_col.insert_one({"user_id": user_id, "products": product_ids})
     cart_col.delete_many({"user_id": user_id})
+
     return jsonify({"message": "Order placed successfully"})
 
 # ✅ View Orders
@@ -150,37 +158,18 @@ def view_orders():
 @jwt_required()
 def cancel_order():
     user_id = get_jwt_identity()
-    data = request.json
+    data = request.get_json()
     order_id = data.get('order_id')
 
     if not order_id:
         return jsonify({"error": "order_id required"}), 400
 
-    result = orders_col.delete_one({
-        "_id": ObjectId(order_id),
-        "user_id": user_id
-    })
-
+    result = orders_col.delete_one({"_id": ObjectId(order_id), "user_id": user_id})
     if result.deleted_count == 1:
         return jsonify({"message": "Order cancelled"})
     else:
         return jsonify({"error": "Order not found"}), 404
 
-# ✅ View Cart
-@app.route('/cart/view')
-@jwt_required()
-def view_cart():
-    user_id = get_jwt_identity()
-    cart_items = list(cart_col.find({"user_id": user_id}))
-
-    product_ids = [ObjectId(item["product_id"]) for item in cart_items if "product_id" in item]
-    products = list(products_col.find({"_id": {"$in": product_ids}}))
-
-    for p in products:
-        p['_id'] = str(p['_id'])
-
-    return jsonify(products)
-
-# ✅ Run server
+# ✅ Start server
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
