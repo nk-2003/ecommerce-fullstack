@@ -10,7 +10,7 @@ import os
 app = Flask(__name__)
 
 # ✅ CORS: Allow local dev + Vercel
-CORS(app, origins=["http://localhost:5173", "https://retrofy-teal.vercel.app"])
+CORS(app, origins=["http://localhost:5173", "https://retrofy-three.vercel.app"])
 
 # ✅ JWT config
 app.config["JWT_SECRET_KEY"] = "secret123"
