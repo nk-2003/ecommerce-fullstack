@@ -8,6 +8,13 @@ const AuthForm = ({ setToken, setUserEmail, setShowLogin }) => {
 
   const handleAuth = async (e) => {
     e.preventDefault();
+
+    // ✅ Check input before request
+    if (!email || !password) {
+      alert("Email and password are required");
+      return;
+    }
+
     try {
       const url = `${import.meta.env.VITE_API_URL}/${isLogin ? "login" : "register"}`;
 
@@ -16,13 +23,13 @@ const AuthForm = ({ setToken, setUserEmail, setShowLogin }) => {
         { email, password },
         {
           headers: {
-            "Content-Type": "application/json" // ✅ tell backend it’s JSON
+            "Content-Type": "application/json"
           }
         }
       );
 
       if (isLogin) {
-        // ✅ Store token & email
+        // ✅ Store login session
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("email", res.data.email);
         setToken(res.data.token);
@@ -32,8 +39,10 @@ const AuthForm = ({ setToken, setUserEmail, setShowLogin }) => {
         alert("Registered! Now login.");
         setIsLogin(true);
       }
+
     } catch (err) {
-      alert(err.response?.data?.error || "Something went wrong");
+      console.error("Auth error:", err.response); // ✅ helpful debug log
+      alert(err.response?.data?.error || "Something went wrong. Try again.");
     }
   };
 
