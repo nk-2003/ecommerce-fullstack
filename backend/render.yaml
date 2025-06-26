@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: retrofy-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: JWT_SECRET_KEY
+        value: your_secret_key
+      - key: MONGO_URI
+        value: mongodb+srv://naveen:nk--2003@cluster0.ys5ptbc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
