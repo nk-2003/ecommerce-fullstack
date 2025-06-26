@@ -10,6 +10,8 @@ import UserPage from './UserPage';
 import UserMenu from './components/UserMenu';
 import AuthForm from './components/AuthForm';
 
+const API = import.meta.env.VITE_API_URL;
+
 const App = () => {
   const navigate = useNavigate();
 
@@ -27,7 +29,7 @@ const App = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await axios.get('http://localhost:5000/products');
+        const res = await axios.get(`${API}/products`);
         setProducts(res.data);
         if (token) {
           await fetchCart();
@@ -44,7 +46,7 @@ const App = () => {
 
   const fetchCart = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/cart/view', {
+      const res = await axios.get(`${API}/cart/view`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCart(res.data);
@@ -55,7 +57,7 @@ const App = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/orders/view', {
+      const res = await axios.get(`${API}/orders/view`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOrders(res.data);
@@ -67,7 +69,7 @@ const App = () => {
   const addToCart = async (product) => {
     try {
       await axios.post(
-        'http://localhost:5000/cart/add',
+        `${API}/cart/add`,
         { product_id: product._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -81,7 +83,7 @@ const App = () => {
   const removeFromCart = async (productId) => {
     try {
       await axios.post(
-        'http://localhost:5000/cart/remove',
+        `${API}/cart/remove`,
         { product_id: productId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -94,7 +96,7 @@ const App = () => {
   const placeOrder = async () => {
     try {
       const res = await axios.post(
-        'http://localhost:5000/orders/place',
+        `${API}/orders/place`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -110,7 +112,7 @@ const App = () => {
   const cancelOrder = async (orderId) => {
     try {
       const res = await axios.post(
-        'http://localhost:5000/orders/cancel',
+        `${API}/orders/cancel`,
         { order_id: orderId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
