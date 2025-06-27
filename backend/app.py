@@ -9,8 +9,8 @@ import os
 
 app = Flask(__name__)
 
-# ✅ Allow Vercel + local frontend access
-CORS(app, origins=["https://retrofy-five.vercel.app"])
+# ✅ Allow Vercel frontend with credentials
+CORS(app, origins=["https://retrofy-five.vercel.app"], supports_credentials=True)
 
 # ✅ JWT config
 app.config["JWT_SECRET_KEY"] = "secret123"
@@ -27,23 +27,20 @@ users_col = db["users"]
 @app.route('/')
 def home():
     return jsonify({"message": "Backend connected to MongoDB"})
-#register 
-@app.route('/login', methods=['POST'])
-def login():
+
+# ✅ Register
+@app.route('/register', methods=['POST'])
+def register():
     data = request.get_json()
-    print("Login attempt:", data)  # 👀 Log attempt
+    email = data.get("email")
+    password = data.get("password")
+    name = data.get("name")
 
-    user = users_collection.find_one({'email': data['email']})
-    if not user:
-        print("Email not found")
-        return jsonify({'error': 'Invalid credentials'}), 401
+    if users_col.find_one({"email": email}):
+        return jsonify({"error": "Email already registered"}), 400
 
-    if not bcrypt.checkpw(data['password'].encode('utf-8'), user['password']):
-        print("Wrong password")
-        return jsonify({'error': 'Invalid credentials'}), 401
-
-    token = create_access_token(identity=str(user['_id']))
-    return jsonify({'token': token, 'name': user['name']}), 200
+    users_col.insert_one({"email": email, "password": password, "name": name})
+    return jsonify({"message": "User registered"}), 201
 
 # ✅ Login
 @app.route('/login', methods=['POST'])

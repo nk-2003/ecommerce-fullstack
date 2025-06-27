@@ -9,9 +9,7 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [email, setEmail] = useState(localStorage.getItem('email') || '');
-
   const [activeForm, setActiveForm] = useState('login'); // 'login' or 'register'
-
   const [inputName, setInputName] = useState('');
   const [inputEmail, setInputEmail] = useState('');
   const [inputPassword, setInputPassword] = useState('');
