@@ -10,6 +10,12 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [email, setEmail] = useState(localStorage.getItem('email') || '');
 
+  const [activeForm, setActiveForm] = useState('login'); // 'login' or 'register'
+
+  const [inputName, setInputName] = useState('');
+  const [inputEmail, setInputEmail] = useState('');
+  const [inputPassword, setInputPassword] = useState('');
+
   // ✅ Load Products
   useEffect(() => {
     axios.get(`${API}/products`)
@@ -17,48 +23,65 @@ function App() {
       .catch(err => console.error("Failed to load products", err));
   }, []);
 
-  // ✅ Load Cart
   const loadCart = () => {
     axios.get(`${API}/cart/view`, {
       headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => setCart(res.data))
+    }).then(res => setCart(res.data))
       .catch(err => console.error("Failed to load cart", err));
   };
 
-  // ✅ Load Orders
   const loadOrders = () => {
     axios.get(`${API}/orders/view`, {
       headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => setOrders(res.data))
+    }).then(res => setOrders(res.data))
       .catch(err => console.error("Failed to load orders", err));
   };
 
-  // ✅ Register
   const register = () => {
     axios.post(`${API}/register`, {
-      email: "test@example.com",
-      password: "123456"
-    }).then(res => alert("Registered"))
-      .catch(err => alert("Register failed"));
+      name: inputName,
+      email: inputEmail,
+      password: inputPassword
+    })
+    .then(() => {
+      alert("Registered successfully");
+      // auto-login
+      return axios.post(`${API}/login`, {
+        email: inputEmail,
+        password: inputPassword
+      });
+    })
+    .then(res => {
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('email', inputEmail);
+      setToken(res.data.token);
+      setEmail(inputEmail);
+      alert("Logged in successfully");
+    })
+    .catch(err => {
+      console.error("Error:", err.response?.data);
+      alert(err.response?.data?.error || "Something went wrong");
+    });
   };
 
-  // ✅ Login
   const login = () => {
     axios.post(`${API}/login`, {
-      email: "test@example.com",
-      password: "123456"
-    }).then(res => {
+      email: inputEmail,
+      password: inputPassword
+    })
+    .then(res => {
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('email', res.data.email);
+      localStorage.setItem('email', inputEmail);
       setToken(res.data.token);
-      setEmail(res.data.email);
+      setEmail(inputEmail);
       alert("Login successful");
-    }).catch(err => alert("Login failed"));
+    })
+    .catch(err => {
+      console.error("Login failed:", err.response?.data);
+      alert(err.response?.data?.error || "Login failed");
+    });
   };
 
-  // ✅ Add to Cart
   const addToCart = (product_id) => {
     axios.post(`${API}/cart/add`, { product_id }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -68,7 +91,6 @@ function App() {
     }).catch(err => alert("Add to cart failed"));
   };
 
-  // ✅ Remove from Cart
   const removeFromCart = (product_id) => {
     axios.post(`${API}/cart/remove`, { product_id }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -78,7 +100,6 @@ function App() {
     }).catch(err => alert("Remove from cart failed"));
   };
 
-  // ✅ Place Order
   const placeOrder = () => {
     axios.post(`${API}/orders/place`, {}, {
       headers: { Authorization: `Bearer ${token}` }
@@ -89,7 +110,6 @@ function App() {
     }).catch(err => alert("Order failed"));
   };
 
-  // ✅ Cancel Order
   const cancelOrder = (order_id) => {
     axios.post(`${API}/orders/cancel`, { order_id }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -99,7 +119,6 @@ function App() {
     }).catch(err => alert("Cancel failed"));
   };
 
-  // ✅ Logout
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
@@ -107,6 +126,10 @@ function App() {
     setEmail('');
     setCart([]);
     setOrders([]);
+    setInputName('');
+    setInputEmail('');
+    setInputPassword('');
+    setActiveForm('login');
   };
 
   return (
@@ -115,8 +138,82 @@ function App() {
 
       {!token ? (
         <>
-          <button onClick={register}>Register</button>
-          <button onClick={login}>Login</button>
+          <div style={{ marginBottom: 20 }}>
+            <button
+              onClick={() => setActiveForm('login')}
+              style={{
+                marginRight: 10,
+                backgroundColor: activeForm === 'login' ? '#444' : '#ccc',
+                color: activeForm === 'login' ? '#fff' : '#000',
+                padding: '6px 12px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setActiveForm('register')}
+              style={{
+                backgroundColor: activeForm === 'register' ? '#444' : '#ccc',
+                color: activeForm === 'register' ? '#fff' : '#000',
+                padding: '6px 12px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Register
+            </button>
+          </div>
+
+          {activeForm === 'register' && (
+            <>
+              <h2>Register</h2>
+              <input
+                type="text"
+                placeholder="Name"
+                value={inputName}
+                onChange={e => setInputName(e.target.value)}
+                style={{ display: 'block', marginBottom: 10 }}
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={inputEmail}
+                onChange={e => setInputEmail(e.target.value)}
+                style={{ display: 'block', marginBottom: 10 }}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={inputPassword}
+                onChange={e => setInputPassword(e.target.value)}
+                style={{ display: 'block', marginBottom: 10 }}
+              />
+              <button onClick={register}>Register</button>
+            </>
+          )}
+
+          {activeForm === 'login' && (
+            <>
+              <h2>Login</h2>
+              <input
+                type="email"
+                placeholder="Email"
+                value={inputEmail}
+                onChange={e => setInputEmail(e.target.value)}
+                style={{ display: 'block', marginBottom: 10 }}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={inputPassword}
+                onChange={e => setInputPassword(e.target.value)}
+                style={{ display: 'block', marginBottom: 10 }}
+              />
+              <button onClick={login}>Login</button>
+            </>
+          )}
         </>
       ) : (
         <>
@@ -148,7 +245,7 @@ function App() {
           <h2>Orders</h2>
           <button onClick={loadOrders}>Refresh Orders</button>
           {orders.map(order => (
-            <div key={order.order_id}>
+            <div key={order.order_id} style={{ marginTop: 10 }}>
               <b>Order ID:</b> {order.order_id}
               {order.products.map(p => (
                 <div key={p._id}>- {p.name}</div>

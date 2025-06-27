@@ -31,32 +31,22 @@ users_col = db["users"]
 def home():
     return jsonify({"message": "Backend connected to MongoDB"})
 #register 
-@app.route('/register', methods=['POST'])
-def register():
-    try:
-        data = request.get_json()
-        print("📩 REGISTER DATA:", data)
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    print("Login attempt:", data)  # 👀 Log attempt
 
-        email = data.get('email')
-        password = data.get('password')
+    user = users_collection.find_one({'email': data['email']})
+    if not user:
+        print("Email not found")
+        return jsonify({'error': 'Invalid credentials'}), 401
 
-        if not email or not password:
-            print("❌ Missing email or password")
-            return jsonify({"error": "Email and password required"}), 400
+    if not bcrypt.checkpw(data['password'].encode('utf-8'), user['password']):
+        print("Wrong password")
+        return jsonify({'error': 'Invalid credentials'}), 401
 
-        if users_col.find_one({"email": email}):
-            return jsonify({"error": "User already exists"}), 400
-
-        users_col.insert_one({
-            "email": email,
-            "password": password
-        })
-
-        return jsonify({"message": "Registered successfully"})
-
-    except Exception as e:
-        print("❌ Backend error:", str(e))
-        return jsonify({"error": "Server error"}), 500
+    token = create_access_token(identity=str(user['_id']))
+    return jsonify({'token': token, 'name': user['name']}), 200
 
 # ✅ Login
 @app.route('/login', methods=['POST'])
