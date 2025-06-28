@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import AuthForm from './components/AuthForm';
+import Navbar from './components/Navbar';
+import ProductCard from './components/ProductCard';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -9,13 +12,14 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [email, setEmail] = useState(localStorage.getItem('email') || '');
-  const [activeForm, setActiveForm] = useState('login'); // 'login' or 'register'
+  const [activeForm, setActiveForm] = useState('login');
   const [inputName, setInputName] = useState('');
   const [inputEmail, setInputEmail] = useState('');
   const [inputPassword, setInputPassword] = useState('');
+  const [showLogin, setShowLogin] = useState(false);
 
-  // ✅ Load Products
   useEffect(() => {
+    console.log("API:", API);
     axios.get(`${API}/products`)
       .then(res => setProducts(res.data))
       .catch(err => console.error("Failed to load products", err));
@@ -41,25 +45,24 @@ function App() {
       email: inputEmail,
       password: inputPassword
     })
-    .then(() => {
-      alert("Registered successfully");
-      // auto-login
-      return axios.post(`${API}/login`, {
-        email: inputEmail,
-        password: inputPassword
+      .then(() => {
+        alert("Registered successfully");
+        return axios.post(`${API}/login`, {
+          email: inputEmail,
+          password: inputPassword
+        });
+      })
+      .then(res => {
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('email', inputEmail);
+        setToken(res.data.token);
+        setEmail(inputEmail);
+        alert("Logged in successfully");
+      })
+      .catch(err => {
+        console.error("Error:", err.response?.data);
+        alert(err.response?.data?.error || "Something went wrong");
       });
-    })
-    .then(res => {
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('email', inputEmail);
-      setToken(res.data.token);
-      setEmail(inputEmail);
-      alert("Logged in successfully");
-    })
-    .catch(err => {
-      console.error("Error:", err.response?.data);
-      alert(err.response?.data?.error || "Something went wrong");
-    });
   };
 
   const login = () => {
@@ -67,17 +70,17 @@ function App() {
       email: inputEmail,
       password: inputPassword
     })
-    .then(res => {
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('email', inputEmail);
-      setToken(res.data.token);
-      setEmail(inputEmail);
-      alert("Login successful");
-    })
-    .catch(err => {
-      console.error("Login failed:", err.response?.data);
-      alert(err.response?.data?.error || "Login failed");
-    });
+      .then(res => {
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('email', inputEmail);
+        setToken(res.data.token);
+        setEmail(inputEmail);
+        alert("Login successful");
+      })
+      .catch(err => {
+        console.error("Login failed:", err.response?.data);
+        alert(err.response?.data?.error || "Login failed");
+      });
   };
 
   const addToCart = (product_id) => {
@@ -131,128 +134,74 @@ function App() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Retrofy Shop</h1>
+    <div className="font-sans bg-white min-h-screen text-gray-900">
+      <Navbar token={token} setShowLogin={setShowLogin} />
 
-      {!token ? (
-        <>
-          <div style={{ marginBottom: 20 }}>
-            <button
-              onClick={() => setActiveForm('login')}
-              style={{
-                marginRight: 10,
-                backgroundColor: activeForm === 'login' ? '#444' : '#ccc',
-                color: activeForm === 'login' ? '#fff' : '#000',
-                padding: '6px 12px',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => setActiveForm('register')}
-              style={{
-                backgroundColor: activeForm === 'register' ? '#444' : '#ccc',
-                color: activeForm === 'register' ? '#fff' : '#000',
-                padding: '6px 12px',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Register
-            </button>
+      {showLogin && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <AuthForm
+              setToken={setToken}
+              setUserEmail={setEmail}
+              setShowLogin={setShowLogin}
+            />
           </div>
-
-          {activeForm === 'register' && (
-            <>
-              <h2>Register</h2>
-              <input
-                type="text"
-                placeholder="Name"
-                value={inputName}
-                onChange={e => setInputName(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={inputEmail}
-                onChange={e => setInputEmail(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={inputPassword}
-                onChange={e => setInputPassword(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <button onClick={register}>Register</button>
-            </>
-          )}
-
-          {activeForm === 'login' && (
-            <>
-              <h2>Login</h2>
-              <input
-                type="email"
-                placeholder="Email"
-                value={inputEmail}
-                onChange={e => setInputEmail(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={inputPassword}
-                onChange={e => setInputPassword(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <button onClick={login}>Login</button>
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          <p>Welcome, {email}</p>
-          <button onClick={logout}>Logout</button>
-        </>
-      )}
-
-      <h2>Products</h2>
-      {products.map(p => (
-        <div key={p._id} style={{ marginBottom: 10 }}>
-          <b>{p.name}</b> - ₹{p.price}
-          {token && <button onClick={() => addToCart(p._id)}>Add</button>}
         </div>
-      ))}
-
-      {token && (
-        <>
-          <h2>Cart</h2>
-          <button onClick={loadCart}>Refresh Cart</button>
-          {cart.map(p => (
-            <div key={p._id}>
-              {p.name} - ₹{p.price}
-              <button onClick={() => removeFromCart(p._id)}>Remove</button>
-            </div>
-          ))}
-          <button onClick={placeOrder}>Place Order</button>
-
-          <h2>Orders</h2>
-          <button onClick={loadOrders}>Refresh Orders</button>
-          {orders.map(order => (
-            <div key={order.order_id} style={{ marginTop: 10 }}>
-              <b>Order ID:</b> {order.order_id}
-              {order.products.map(p => (
-                <div key={p._id}>- {p.name}</div>
-              ))}
-              <button onClick={() => cancelOrder(order.order_id)}>Cancel</button>
-            </div>
-          ))}
-        </>
       )}
+
+      <div className="p-6">
+        <hr className="mb-6 border-gray-300" />
+
+        {token && (
+          <div className="flex justify-between items-center my-4">
+            <p className="text-lg">Welcome, <span className="font-semibold">{email}</span></p>
+            <button onClick={logout} className="bg-red-500 hover:bg-red-600 transition text-white px-4 py-2 rounded shadow">Logout</button>
+          </div>
+        )}
+
+        <h2 className="text-2xl font-semibold mt-6 mb-4">Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.map(product => (
+            <ProductCard
+              key={product._id}
+              product={product}
+              addToCart={() => addToCart(product._id)}
+            />
+          ))}
+        </div>
+
+        {token && (
+          <>
+            <h2 className="text-2xl font-semibold mt-6 mb-2">Cart</h2>
+            <button onClick={loadCart} className="mb-2 bg-gray-300 hover:bg-gray-400 transition px-4 py-2 rounded shadow">Refresh Cart</button>
+            <div className="space-y-2">
+              {cart.map(p => (
+                <div key={p._id} className="flex justify-between items-center p-4 border rounded shadow-sm hover:shadow-md transition">
+                  <span>{p.name} - ₹{p.price}</span>
+                  <button onClick={() => removeFromCart(p._id)} className="text-red-600 hover:underline">Remove</button>
+                </div>
+              ))}
+            </div>
+            <button onClick={placeOrder} className="mt-4 bg-indigo-600 hover:bg-indigo-700 transition text-white px-4 py-2 rounded shadow">Place Order</button>
+
+            <h2 className="text-2xl font-semibold mt-6 mb-2">Orders</h2>
+            <button onClick={loadOrders} className="mb-2 bg-gray-300 hover:bg-gray-400 transition px-4 py-2 rounded shadow">Refresh Orders</button>
+            <div className="space-y-4">
+              {orders.map(order => (
+                <div key={order.order_id} className="p-4 border rounded shadow hover:shadow-md transition bg-gray-50">
+                  <p><b>Order ID:</b> {order.order_id}</p>
+                  <div className="ml-2 mt-1 space-y-1">
+                    {order.products.map(p => (
+                      <div key={p._id}>- {p.name}</div>
+                    ))}
+                  </div>
+                  <button onClick={() => cancelOrder(order.order_id)} className="mt-2 text-sm text-red-600 hover:underline hover:text-red-800 transition">Cancel</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

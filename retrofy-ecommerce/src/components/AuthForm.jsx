@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 
 const AuthForm = ({ setToken, setUserEmail, setShowLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const modalRef = useRef();
 
   const handleAuth = async (e) => {
     e.preventDefault();
-
-    // ✅ Check input before request
     if (!email || !password) {
       alert("Email and password are required");
       return;
@@ -17,19 +16,9 @@ const AuthForm = ({ setToken, setUserEmail, setShowLogin }) => {
 
     try {
       const url = `${import.meta.env.VITE_API_URL}/${isLogin ? "login" : "register"}`;
-
-      const res = await axios.post(
-        url,
-        { email, password },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
-      );
+      const res = await axios.post(url, { email, password });
 
       if (isLogin) {
-        // ✅ Store login session
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("email", res.data.email);
         setToken(res.data.token);
@@ -39,77 +28,83 @@ const AuthForm = ({ setToken, setUserEmail, setShowLogin }) => {
         alert("Registered! Now login.");
         setIsLogin(true);
       }
-
     } catch (err) {
-      console.error("Auth error:", err.response); // ✅ helpful debug log
-      alert(err.response?.data?.error || "Something went wrong. Try again.");
+      console.error("Auth error:", err.response);
+      alert(err.response?.data?.error || "Something went wrong.");
     }
   };
 
+  // Escape key to close
+  useEffect(() => {
+    const esc = (e) => e.key === "Escape" && setShowLogin(false);
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, []);
+
+  // Click outside to close
+  useEffect(() => {
+    const closeOnOutsideClick = (e) => {
+      if (modalRef.current && !modalRef.current.contains(e.target)) {
+        setShowLogin(false);
+      }
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
+
   return (
-    <form onSubmit={handleAuth} style={styles.form}>
-      <h2>{isLogin ? "Login" : "Register"}</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <form
+        ref={modalRef}
+        onSubmit={handleAuth}
+        className="relative bg-white shadow-xl rounded-lg p-6 w-full max-w-sm space-y-4"
+      >
+        <button
+          type="button"
+          onClick={() => setShowLogin(false)}
+          className="absolute top-2 right-3 text-gray-500 hover:text-black text-xl"
+        >
+          &times;
+        </button>
 
-      <input
-        type="email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        placeholder="Email"
-        required
-        style={styles.input}
-      />
+        <h2 className="text-2xl font-bold text-center text-gray-800">
+          {isLogin ? 'Login' : 'Register'}
+        </h2>
 
-      <input
-        type="password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        placeholder="Password"
-        required
-        style={styles.input}
-      />
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+          className="w-full p-3 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+        />
 
-      <button type="submit" style={styles.button}>
-        {isLogin ? "Login" : "Register"}
-      </button>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+          className="w-full p-3 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+        />
 
-      <p style={styles.toggle} onClick={() => setIsLogin(!isLogin)}>
-        {isLogin ? "New user? Register" : "Already registered? Login"}
-      </p>
-    </form>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-medium transition shadow"
+        >
+          {isLogin ? 'Login' : 'Register'}
+        </button>
+
+        <p
+          className="text-center text-blue-600 hover:underline cursor-pointer mt-1 text-sm"
+          onClick={() => setIsLogin(!isLogin)}
+        >
+          {isLogin ? 'New user? Register' : 'Already registered? Login'}
+        </p>
+      </form>
+    </div>
   );
-};
-
-const styles = {
-  form: {
-    maxWidth: '300px',
-    margin: '2rem auto',
-    padding: '1.5rem',
-    backgroundColor: '#fff',
-    borderRadius: '8px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)'
-  },
-  input: {
-    width: '100%',
-    padding: '0.5rem',
-    marginBottom: '1rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc'
-  },
-  button: {
-    width: '100%',
-    padding: '0.6rem',
-    backgroundColor: '#111',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  toggle: {
-    marginTop: '1rem',
-    textAlign: 'center',
-    cursor: 'pointer',
-    color: '#007bff'
-  }
 };
 
 export default AuthForm;
