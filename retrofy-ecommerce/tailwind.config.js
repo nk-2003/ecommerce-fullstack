@@ -5,6 +5,6 @@ export default {
   },
   plugins: [],
   future: {
-    useFutureCss: false, // ⛔️ disables LightningCSS
+    useFutureCss: false, 
   },
 };
