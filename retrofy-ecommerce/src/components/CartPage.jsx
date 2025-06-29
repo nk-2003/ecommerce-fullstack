@@ -8,7 +8,7 @@ const CartPage = ({ cart = [], setCart, token, removeFromCart, placeOrder }) => 
 
   return (
     <div className="max-w-3xl mx-auto mt-10 bg-white shadow-md rounded-lg p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">🛒 Your Cart</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Your Cart</h2>
 
       {!cart || cart.length === 0 ? (
         <p className="text-gray-500">Your cart is empty.</p>
@@ -37,7 +37,7 @@ const CartPage = ({ cart = [], setCart, token, removeFromCart, placeOrder }) => 
               onClick={placeOrder}
               className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded"
             >
-              ✅ Place Order
+               Place Order
             </button>
           </div>
         </div>

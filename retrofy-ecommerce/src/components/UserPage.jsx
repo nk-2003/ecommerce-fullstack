@@ -39,7 +39,7 @@ const UserPage = ({ user, cart, orders, setUser }) => {
 
       {/* 📦 Orders Section */}
       <div style={styles.section}>
-        <h3>📦 Orders</h3>
+        <h3>Orders</h3>
         {orders.length === 0 ? (
           <p>No orders yet</p>
         ) : (

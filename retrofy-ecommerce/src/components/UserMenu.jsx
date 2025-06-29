@@ -62,7 +62,7 @@ const UserMenu = ({ user, cart, orders, logout, reloadOrders }) => {
 
       {/* Orders */}
       <div>
-        <h4 className="text-md font-bold text-gray-700 mb-1">📦 Orders:</h4>
+        <h4 className="text-md font-bold text-gray-700 mb-1">Orders:</h4>
         {orders.length === 0 ? (
           <p className="text-sm text-gray-500">No orders yet</p>
         ) : (
@@ -74,9 +74,9 @@ const UserMenu = ({ user, cart, orders, logout, reloadOrders }) => {
             return (
               <div key={order.order_id} className="mb-4 border p-3 rounded bg-gray-50">
                 <p className="text-sm font-semibold text-gray-700">
-                  🧾 Order #{order.order_id.slice(-6)} | 📅 {orderDate.toLocaleDateString()}
+                   Order #{order.order_id.slice(-6)} |  {orderDate.toLocaleDateString()}
                 </p>
-                <p className="text-sm text-gray-600">🚚 Delivery: {deliveryDate.toLocaleString()}</p>
+                <p className="text-sm text-gray-600"> Delivery: {deliveryDate.toLocaleString()}</p>
                 <p className="text-sm text-green-600">Status: Placed</p>
 
                 {order.products.map((prod) => (
@@ -100,7 +100,7 @@ const UserMenu = ({ user, cart, orders, logout, reloadOrders }) => {
                   onClick={() => handleReorder(order.products)}
                   className="mt-2 w-full bg-yellow-400 hover:bg-yellow-500 text-black py-1 rounded text-sm"
                 >
-                  🔁 Reorder
+                   Reorder
                 </button>
               </div>
             );
