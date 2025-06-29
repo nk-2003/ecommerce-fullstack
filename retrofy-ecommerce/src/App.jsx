@@ -1,260 +1,201 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+// src/App.jsx
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "./App.css";
+import Navbar from "./components/Navbar";
+import CartPage from "./components/CartPage";
+import UserMenu from "./components/UserMenu";
+import AuthForm from "./components/AuthForm";
+import ProductCard from "./components/ProductCard";
 
-const API = import.meta.env.VITE_API_URL;
-
-function App() {
-  const [products, setProducts] = useState([]);
+const App = () => {
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [email, setUserEmail] = useState(localStorage.getItem("email") || "");
+  const [user, setUser] = useState({ name: "", email: "" });
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [email, setEmail] = useState(localStorage.getItem('email') || '');
-  const [activeForm, setActiveForm] = useState('login'); // 'login' or 'register'
-  const [inputName, setInputName] = useState('');
-  const [inputEmail, setInputEmail] = useState('');
-  const [inputPassword, setInputPassword] = useState('');
+  const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showCart, setShowCart] = useState(false);
 
-  // ✅ Load Products
+  const API = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
-    axios.get(`${API}/products`)
-      .then(res => setProducts(res.data))
-      .catch(err => console.error("Failed to load products", err));
+  if (token) {
+    axios
+      .get(`${API}/user/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      .then((res) => {
+        setUser({
+          name: res.data.name,
+          email: res.data.email
+        });
+        // Optional: update localStorage
+        localStorage.setItem("name", res.data.name);
+        localStorage.setItem("email", res.data.email);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user:", err);
+        setUser({ name: "Guest", email: "Not available" }); // fallback
+      });
+  }
+}, [token]);
+
+
+  useEffect(() => {
+    axios
+      .get(`${API}/products`)
+      .then((res) => setProducts(res.data))
+      .catch((err) => console.error("Failed to load products:", err));
   }, []);
 
-  const loadCart = () => {
-    axios.get(`${API}/cart/view`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setCart(res.data))
-      .catch(err => console.error("Failed to load cart", err));
+  const fetchOrders = () => {
+    if (token) {
+      axios
+        .get(`${API}/orders/view`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => setOrders(res.data))
+        .catch((err) => console.error("Failed to load orders:", err));
+    }
   };
 
-  const loadOrders = () => {
-    axios.get(`${API}/orders/view`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setOrders(res.data))
-      .catch(err => console.error("Failed to load orders", err));
-  };
-
-  const register = () => {
-    axios.post(`${API}/register`, {
-      name: inputName,
-      email: inputEmail,
-      password: inputPassword
-    })
-    .then(() => {
-      alert("Registered successfully");
-      // auto-login
-      return axios.post(`${API}/login`, {
-        email: inputEmail,
-        password: inputPassword
-      });
-    })
-    .then(res => {
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('email', inputEmail);
-      setToken(res.data.token);
-      setEmail(inputEmail);
-      alert("Logged in successfully");
-    })
-    .catch(err => {
-      console.error("Error:", err.response?.data);
-      alert(err.response?.data?.error || "Something went wrong");
-    });
-  };
-
-  const login = () => {
-    axios.post(`${API}/login`, {
-      email: inputEmail,
-      password: inputPassword
-    })
-    .then(res => {
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('email', inputEmail);
-      setToken(res.data.token);
-      setEmail(inputEmail);
-      alert("Login successful");
-    })
-    .catch(err => {
-      console.error("Login failed:", err.response?.data);
-      alert(err.response?.data?.error || "Login failed");
-    });
-  };
+  useEffect(() => {
+    fetchOrders();
+  }, [token]);
 
   const addToCart = (product_id) => {
-    axios.post(`${API}/cart/add`, { product_id }, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(() => {
-      alert("Added to cart");
-      loadCart();
-    }).catch(err => alert("Add to cart failed"));
+    if (!token) {
+      alert("Please login first");
+      setShowLogin(true);
+      return;
+    }
+
+    axios
+      .post(
+        `${API}/cart/add`,
+        { product_id },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      .then(() => {
+        alert("Added to cart!");
+        fetchCart();
+      })
+      .catch((err) => console.error("Add to cart failed:", err));
   };
 
-  const removeFromCart = (product_id) => {
-    axios.post(`${API}/cart/remove`, { product_id }, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(() => {
-      alert("Removed from cart");
-      loadCart();
-    }).catch(err => alert("Remove from cart failed"));
+  const fetchCart = () => {
+    if (token) {
+      axios
+        .get(`${API}/cart/view`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => setCart(res.data))
+        .catch((err) => console.error("Failed to fetch cart:", err));
+    }
   };
 
-  const placeOrder = () => {
-    axios.post(`${API}/orders/place`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(() => {
-      alert("Order placed");
-      loadOrders();
-      loadCart();
-    }).catch(err => alert("Order failed"));
-  };
-
-  const cancelOrder = (order_id) => {
-    axios.post(`${API}/orders/cancel`, { order_id }, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(() => {
-      alert("Order cancelled");
-      loadOrders();
-    }).catch(err => alert("Cancel failed"));
-  };
+  useEffect(() => {
+    fetchCart();
+  }, [token]);
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    setToken('');
-    setEmail('');
+    setToken("");
+    setUserEmail("");
+    localStorage.clear();
+    setShowUserMenu(false);
     setCart([]);
     setOrders([]);
-    setInputName('');
-    setInputEmail('');
-    setInputPassword('');
-    setActiveForm('login');
+    setShowCart(false);
   };
 
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Retrofy Shop</h1>
+    <div className="bg-gray-100 min-h-screen">
+      <Navbar
+        toggleUserMenu={() => setShowUserMenu(!showUserMenu)}
+        token={token}
+        setShowLogin={setShowLogin}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        cart={cart}
+        setShowCart={() => setShowCart(!showCart)}
+      />
 
-      {!token ? (
-        <>
-          <div style={{ marginBottom: 20 }}>
-            <button
-              onClick={() => setActiveForm('login')}
-              style={{
-                marginRight: 10,
-                backgroundColor: activeForm === 'login' ? '#444' : '#ccc',
-                color: activeForm === 'login' ? '#fff' : '#000',
-                padding: '6px 12px',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => setActiveForm('register')}
-              style={{
-                backgroundColor: activeForm === 'register' ? '#444' : '#ccc',
-                color: activeForm === 'register' ? '#fff' : '#000',
-                padding: '6px 12px',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Register
-            </button>
+      <main className="p-4">
+        {token && showCart ? (
+          <CartPage
+            cart={cart}
+            setCart={setCart}
+            token={token}
+            removeFromCart={(id) =>
+              axios
+                .post(
+                  `${API}/cart/remove`,
+                  { product_id: id },
+                  { headers: { Authorization: `Bearer ${token}` } }
+                )
+                .then(() => fetchCart())
+                .catch((err) => console.error("Failed to remove:", err))
+            }
+            placeOrder={() => {
+              axios
+                .post(
+                  `${API}/orders/place`,
+                  {},
+                  { headers: { Authorization: `Bearer ${token}` } }
+                )
+                .then(() => {
+                  alert("Order placed");
+                  setCart([]);
+                  fetchOrders();
+                  setShowCart(false);
+                })
+                .catch(() => alert("Order failed"));
+            }}
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={product}
+                addToCart={addToCart}
+              />
+            ))}
           </div>
+        )}
+      </main>
 
-          {activeForm === 'register' && (
-            <>
-              <h2>Register</h2>
-              <input
-                type="text"
-                placeholder="Name"
-                value={inputName}
-                onChange={e => setInputName(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={inputEmail}
-                onChange={e => setInputEmail(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={inputPassword}
-                onChange={e => setInputPassword(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <button onClick={register}>Register</button>
-            </>
-          )}
-
-          {activeForm === 'login' && (
-            <>
-              <h2>Login</h2>
-              <input
-                type="email"
-                placeholder="Email"
-                value={inputEmail}
-                onChange={e => setInputEmail(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={inputPassword}
-                onChange={e => setInputPassword(e.target.value)}
-                style={{ display: 'block', marginBottom: 10 }}
-              />
-              <button onClick={login}>Login</button>
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          <p>Welcome, {email}</p>
-          <button onClick={logout}>Logout</button>
-        </>
+      {showUserMenu && token && (
+        <UserMenu
+          user={user}
+          cart={cart}
+          orders={orders}
+          logout={logout}
+          reloadOrders={fetchOrders}
+        />
       )}
 
-      <h2>Products</h2>
-      {products.map(p => (
-        <div key={p._id} style={{ marginBottom: 10 }}>
-          <b>{p.name}</b> - ₹{p.price}
-          {token && <button onClick={() => addToCart(p._id)}>Add</button>}
-        </div>
-      ))}
-
-      {token && (
-        <>
-          <h2>Cart</h2>
-          <button onClick={loadCart}>Refresh Cart</button>
-          {cart.map(p => (
-            <div key={p._id}>
-              {p.name} - ₹{p.price}
-              <button onClick={() => removeFromCart(p._id)}>Remove</button>
-            </div>
-          ))}
-          <button onClick={placeOrder}>Place Order</button>
-
-          <h2>Orders</h2>
-          <button onClick={loadOrders}>Refresh Orders</button>
-          {orders.map(order => (
-            <div key={order.order_id} style={{ marginTop: 10 }}>
-              <b>Order ID:</b> {order.order_id}
-              {order.products.map(p => (
-                <div key={p._id}>- {p.name}</div>
-              ))}
-              <button onClick={() => cancelOrder(order.order_id)}>Cancel</button>
-            </div>
-          ))}
-        </>
+      {showLogin && (
+        <AuthForm
+          setToken={setToken}
+          setUserEmail={setUserEmail}
+          setShowLogin={setShowLogin}
+        />
       )}
     </div>
   );
-}
+};
 
 export default App;

@@ -8,15 +8,10 @@ from flask_jwt_extended import (
 import os
 
 app = Flask(__name__)
-
-# ✅ Allow Vercel frontend with credentials
-CORS(app, origins=["http://localhost:5173","https://retrofy-five.vercel.app"], supports_credentials=True)
-
-# ✅ JWT config
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://retrofy-five.vercel.app"]}}, supports_credentials=True)
 app.config["JWT_SECRET_KEY"] = "secret123"
 jwt = JWTManager(app)
 
-# ✅ MongoDB connection
 client = MongoClient("mongodb+srv://naveen:nk--2003@cluster0.ys5ptbc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db = client["ecommerce"]
 products_col = db["products"]
@@ -24,11 +19,23 @@ cart_col = db["cart"]
 orders_col = db["orders"]
 users_col = db["users"]
 
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        return '', 200
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    return response
+
 @app.route('/')
 def home():
     return jsonify({"message": "Backend connected to MongoDB"})
 
-# ✅ Register
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -42,7 +49,6 @@ def register():
     users_col.insert_one({"email": email, "password": password, "name": name})
     return jsonify({"message": "User registered"}), 201
 
-# ✅ Login
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -54,9 +60,22 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
 
     token = create_access_token(identity=str(user['_id']))
-    return jsonify({"token": token, "email": user['email']})
+    return jsonify({"token": token, "email": user['email'], "name": user['name']})
 
-# ✅ Products
+@app.route('/user/profile')
+@jwt_required()
+def user_profile():
+    user_id = get_jwt_identity()
+    user = users_col.find_one({"_id": ObjectId(user_id)})
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "name": user.get("name", ""),
+        "email": user.get("email", "")
+    })
+
 @app.route('/products')
 def get_products():
     products = list(products_col.find())
@@ -64,7 +83,6 @@ def get_products():
         p['_id'] = str(p['_id'])
     return jsonify(products)
 
-# ✅ Add to Cart
 @app.route('/cart/add', methods=['POST'])
 @jwt_required()
 def add_to_cart():
@@ -78,7 +96,6 @@ def add_to_cart():
     cart_col.insert_one({"product_id": product_id, "user_id": user_id})
     return jsonify({"message": "Added to cart"})
 
-# ✅ View Cart
 @app.route('/cart/view')
 @jwt_required()
 def view_cart():
@@ -93,7 +110,6 @@ def view_cart():
 
     return jsonify(products)
 
-# ✅ Remove from Cart
 @app.route('/cart/remove', methods=['POST'])
 @jwt_required()
 def remove_from_cart():
@@ -107,7 +123,6 @@ def remove_from_cart():
     cart_col.delete_one({"product_id": product_id, "user_id": user_id})
     return jsonify({"message": "Removed from cart"})
 
-# ✅ Place Order
 @app.route('/orders/place', methods=['POST'])
 @jwt_required()
 def place_order():
@@ -123,7 +138,6 @@ def place_order():
 
     return jsonify({"message": "Order placed successfully"})
 
-# ✅ View Orders
 @app.route('/orders/view')
 @jwt_required()
 def view_orders():
@@ -151,7 +165,6 @@ def view_orders():
 
     return jsonify(result)
 
-# ✅ Cancel Order
 @app.route('/orders/cancel', methods=['POST'])
 @jwt_required()
 def cancel_order():
@@ -168,6 +181,5 @@ def cancel_order():
     else:
         return jsonify({"error": "Order not found"}), 404
 
-# ✅ Start server
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

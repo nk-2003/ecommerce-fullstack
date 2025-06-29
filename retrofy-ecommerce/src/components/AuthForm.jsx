@@ -1,81 +1,90 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+// src/AuthForm.jsx
+import React, { useState } from "react";
+import axios from "axios";
 
 const AuthForm = ({ setToken, setUserEmail, setShowLogin }) => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const API = import.meta.env.VITE_API_URL;
 
-  const handleAuth = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // ✅ Check input before request
-    if (!email || !password) {
-      alert("Email and password are required");
-      return;
-    }
-
     try {
-      const url = `${import.meta.env.VITE_API_URL}/${isLogin ? "login" : "register"}`;
+      const url = isRegister ? `${API}/register` : `${API}/login`;
+      const payload = isRegister ? { name, email, password } : { email, password };
 
-      const res = await axios.post(
-        url,
-        { email, password },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
-      );
+      const res = await axios.post(url, payload);
 
-      if (isLogin) {
-        // ✅ Store login session
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("email", res.data.email);
-        setToken(res.data.token);
-        setUserEmail(res.data.email);
-        setShowLogin(false);
-      } else {
-        alert("Registered! Now login.");
-        setIsLogin(true);
-      }
-
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("email", res.data.email);
+      localStorage.setItem("name", res.data.name);
+      setToken(res.data.token);
+      setUserEmail(res.data.email);
+      setShowLogin(false);
     } catch (err) {
-      console.error("Auth error:", err.response); // ✅ helpful debug log
-      alert(err.response?.data?.error || "Something went wrong. Try again.");
+      alert(isRegister ? "Registration failed" : "Login failed");
+      console.error(err);
     }
   };
 
   return (
-    <form onSubmit={handleAuth} style={styles.form}>
-      <h2>{isLogin ? "Login" : "Register"}</h2>
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm mx-auto">
+        <h2 className="text-xl font-bold mb-4 text-center text-gray-800">
+          {isRegister ? "Create Account" : "Login to Retrofy"}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isRegister && (
+            <input
+              type="text"
+              placeholder="Full Name"
+              className="w-full p-2 border rounded"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          )}
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full p-2 border rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full p-2 border rounded"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            className="w-full bg-yellow-400 hover:bg-yellow-500 py-2 rounded font-semibold"
+          >
+            {isRegister ? "Register" : "Login"}
+          </button>
+        </form>
 
-      <input
-        type="email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        placeholder="Email"
-        required
-        style={styles.input}
-      />
+        <p
+          className="mt-4 text-sm text-center text-blue-600 hover:underline cursor-pointer"
+          onClick={() => setIsRegister(!isRegister)}
+        >
+          {isRegister ? "Already have an account? Login" : "New user? Register"}
+        </p>
 
-      <input
-        type="password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        placeholder="Password"
-        required
-        style={styles.input}
-      />
-
-      <button type="submit" style={styles.button}>
-        {isLogin ? "Login" : "Register"}
-      </button>
-
-      <p style={styles.toggle} onClick={() => setIsLogin(!isLogin)}>
-        {isLogin ? "New user? Register" : "Already registered? Login"}
-      </p>
-    </form>
+        <p
+          className="mt-2 text-xs text-center text-gray-500 hover:text-red-500 cursor-pointer"
+          onClick={() => setShowLogin(false)}
+        >
+          ❌ Close
+        </p>
+      </div>
+    </div>
   );
 };
 
