@@ -17,7 +17,8 @@ const UserPage = ({ user, cart, orders, setUser }) => {
       window.location.reload(); // Refresh orders after cancel
     } catch (error) {
       alert("Cancel failed");
-      console.error(error);
+      console.error(error)
+      
     }
   };
 
