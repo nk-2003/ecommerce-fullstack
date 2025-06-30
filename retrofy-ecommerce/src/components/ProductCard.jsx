@@ -10,17 +10,17 @@ const ProductCard = ({ product, addToCart }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-xl transition-all w-full max-w-xs">
+    <div className="bg-white p-3 rounded-lg shadow-md hover:shadow-xl transition-all w-full">
       <img
         src={`/images/${product.image}`}
         alt={product.name}
-        className="w-full h-48 object-contain rounded-md"
+        className="w-full h-32 object-contain rounded-md"
       />
-      <h3 className="text-lg font-semibold mt-3 text-center">{product.name}</h3>
-      <p className="text-green-600 font-bold text-center">₹{product.price}</p>
+      <h3 className="text-base font-semibold mt-2 text-center truncate">{product.name}</h3>
+      <p className="text-green-600 font-bold text-center text-sm">₹{product.price}</p>
       <button
         onClick={handleAddToCart}
-        className="mt-3 w-full bg-yellow-400 hover:bg-yellow-500 text-black py-2 rounded font-medium"
+        className="mt-3 w-full bg-yellow-400 hover:bg-yellow-500 text-black py-2 rounded text-sm font-medium"
       >
         Add to Cart
       </button>

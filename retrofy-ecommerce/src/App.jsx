@@ -184,6 +184,7 @@ const App = () => {
           orders={orders}
           logout={logout}
           reloadOrders={fetchOrders}
+          onClose={() => setShowUserMenu(false)}
         />
       )}
 
