@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
@@ -7,6 +6,7 @@ import CartPage from "./components/CartPage";
 import UserMenu from "./components/UserMenu";
 import AuthForm from "./components/AuthForm";
 import ProductCard from "./components/ProductCard";
+import Spinner from "./components/Spinner"; // ✅ using spinner instead of LoadingCard
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -19,39 +19,38 @@ const App = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCart, setShowCart] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const API = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-  if (token) {
-    axios
-      .get(`${API}/user/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      .then((res) => {
-        setUser({
-          name: res.data.name,
-          email: res.data.email
+    if (token) {
+      axios
+        .get(`${API}/user/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          setUser({
+            name: res.data.name,
+            email: res.data.email,
+          });
+          localStorage.setItem("name", res.data.name);
+          localStorage.setItem("email", res.data.email);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch user:", err);
+          setUser({ name: "Guest", email: "Not available" });
         });
-        // Optional: update localStorage
-        localStorage.setItem("name", res.data.name);
-        localStorage.setItem("email", res.data.email);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch user:", err);
-        setUser({ name: "Guest", email: "Not available" }); // fallback
-      });
-  }
-}, [token]);
-
+    }
+  }, [token]);
 
   useEffect(() => {
+    setLoading(true);
     axios
       .get(`${API}/products`)
       .then((res) => setProducts(res.data))
-      .catch((err) => console.error("Failed to load products:", err));
+      .catch((err) => console.error("Failed to load products:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const fetchOrders = () => {
@@ -164,6 +163,10 @@ const App = () => {
                 .catch(() => alert("Order failed"));
             }}
           />
+        ) : loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Spinner />
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
