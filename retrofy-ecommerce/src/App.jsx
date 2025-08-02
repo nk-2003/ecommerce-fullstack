@@ -6,7 +6,7 @@ import CartPage from "./components/CartPage";
 import UserMenu from "./components/UserMenu";
 import AuthForm from "./components/AuthForm";
 import ProductCard from "./components/ProductCard";
-import Spinner from "./components/Spinner"; // ✅ using spinner instead of LoadingCard
+import Spinner from "./components/Spinner"; // ✅ Circular loader
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -23,6 +23,17 @@ const App = () => {
 
   const API = import.meta.env.VITE_API_URL;
 
+  // 🔁 Fisher-Yates shuffle
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // 🧠 Fetch user details
   useEffect(() => {
     if (token) {
       axios
@@ -44,15 +55,20 @@ const App = () => {
     }
   }, [token]);
 
+  // 📦 Fetch + shuffle products
   useEffect(() => {
     setLoading(true);
     axios
       .get(`${API}/products`)
-      .then((res) => setProducts(res.data))
+      .then((res) => {
+        const shuffled = shuffleArray(res.data);
+        setProducts(shuffled);
+      })
       .catch((err) => console.error("Failed to load products:", err))
       .finally(() => setLoading(false));
   }, []);
 
+  // 📦 Fetch orders
   const fetchOrders = () => {
     if (token) {
       axios
@@ -68,6 +84,7 @@ const App = () => {
     fetchOrders();
   }, [token]);
 
+  // ➕ Add to Cart
   const addToCart = (product_id) => {
     if (!token) {
       alert("Please login first");
@@ -90,6 +107,7 @@ const App = () => {
       .catch((err) => console.error("Add to cart failed:", err));
   };
 
+  // 🛒 Fetch Cart
   const fetchCart = () => {
     if (token) {
       axios
@@ -105,6 +123,7 @@ const App = () => {
     fetchCart();
   }, [token]);
 
+  // 🚪 Logout
   const logout = () => {
     setToken("");
     setUserEmail("");
@@ -115,6 +134,7 @@ const App = () => {
     setShowCart(false);
   };
 
+  // 🔍 Filtered product list
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
